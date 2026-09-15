@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My HTML App</title>
+    <title>Random Joke Generator</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,7 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -26,14 +26,15 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
+            text-align: center;
         }
         
         h1 {
             color: #333;
             margin-bottom: 10px;
-            font-size: 2em;
+            font-size: 2.5em;
         }
         
         .subtitle {
@@ -42,35 +43,45 @@
             font-size: 1em;
         }
         
-        .card {
+        .joke-box {
             background: #f5f5f5;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .card h2 {
-            color: #667eea;
+        .joke-text {
+            color: #333;
             font-size: 1.2em;
-            margin-bottom: 10px;
+            line-height: 1.6;
+            font-weight: 500;
         }
         
-        .card p {
-            color: #555;
-            line-height: 1.6;
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+        
+        .error {
+            color: #e74c3c;
         }
         
         button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 30px;
+            padding: 14px 40px;
             border-radius: 25px;
-            font-size: 1em;
+            font-size: 1.1em;
+            font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         
         button:hover {
@@ -81,31 +92,158 @@
         button:active {
             transform: translateY(0);
         }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .type-selector {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .type-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .type-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .type-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            color: #999;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome!</h1>
-        <p class="subtitle">This is your HTML to APK app</p>
+        <h1>😂 Joke Generator</h1>
+        <p class="subtitle">Get random jokes from the internet!</p>
         
-        <div class="card">
-            <h2>🚀 Getting Started</h2>
-            <p>Edit the index.html file to customize your app. Every time you push changes, a new APK will be automatically built!</p>
+        <div class="type-selector">
+            <button class="type-btn active" onclick="setType('general')">General</button>
+            <button class="type-btn" onclick="setType('programming')">Programming</button>
+            <button class="type-btn" onclick="setType('knock-knock')">Knock Knock</button>
         </div>
         
-        <div class="card">
-            <h2>📱 Mobile Ready</h2>
-            <p>This app is optimized for mobile devices and will work great on Android phones and tablets.</p>
+        <div class="joke-box">
+            <div class="joke-text" id="jokeText">Click the button to get a joke!</div>
         </div>
         
-        <button onclick="alert('Hello! Edit me in index.html')">Click Me!</button>
-        <button onclick="showInfo()">Show Info</button>
+        <button onclick="getJoke()" id="jokeBtn">Get a Joke! 🎉</button>
+        <button onclick="shareJoke()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">Share This Joke 📱</button>
+        
+        <div class="footer">
+            <p>Powered by JokeAPI</p>
+        </div>
     </div>
     
     <script>
-        function showInfo() {
-            alert('User Agent: ' + navigator.userAgent + '\n\nDevice is ready for your app!');
+        let currentJoke = '';
+        let jokeType = 'general';
+        
+        async function getJoke() {
+            const btn = document.getElementById('jokeBtn');
+            const jokeText = document.getElementById('jokeText');
+            
+            btn.disabled = true;
+            jokeText.textContent = 'Loading...';
+            jokeText.classList.add('loading');
+            
+            try {
+                // Using JokeAPI - free public API
+                let url = 'https://v2.jokeapi.dev/joke/';
+                
+                if (jokeType === 'general') {
+                    url += 'Any';
+                } else if (jokeType === 'programming') {
+                    url += 'Programming';
+                } else if (jokeType === 'knock-knock') {
+                    url += 'Knock-Knock';
+                }
+                
+                url += '?type=single';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.error) {
+                    jokeText.textContent = 'Oops! No joke found. Try another category!';
+                    jokeText.classList.remove('loading');
+                    jokeText.classList.add('error');
+                } else {
+                    currentJoke = data.joke;
+                    jokeText.textContent = data.joke;
+                    jokeText.classList.remove('loading');
+                    jokeText.classList.remove('error');
+                }
+            } catch (error) {
+                jokeText.textContent = 'Error loading joke. Check your internet connection!';
+                jokeText.classList.remove('loading');
+                jokeText.classList.add('error');
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+            }
         }
+        
+        function setType(type) {
+            jokeType = type;
+            
+            // Update active button
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Get new joke
+            getJoke();
+        }
+        
+        function shareJoke() {
+            if (currentJoke) {
+                const text = `Check this out! 😂\n\n${currentJoke}\n\nGenerated by Joke Generator App`;
+                
+                // Try to use Web Share API if available
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Joke Generator',
+                        text: text
+                    }).catch(err => console.log('Share cancelled'));
+                } else {
+                    // Fallback: Copy to clipboard
+                    navigator.clipboard.writeText(text).then(() => {
+                        alert('Joke copied to clipboard! 📋');
+                    });
+                }
+            } else {
+                alert('Get a joke first! 😄');
+            }
+        }
+        
+        // Load a joke when page loads
+        window.addEventListener('load', () => {
+            getJoke();
+        });
     </script>
 </body>
 </html>
